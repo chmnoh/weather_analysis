@@ -1,0 +1,56 @@
+---
+title: "StormData Analysis for Effects On Public Health & Economy"
+author: "C.M. Oh"
+date: "Friday, October 24, 2014"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+# Data Processing
+### libraries
+```{r, warning=FALSE}
+Sys.setlocale(category="LC_ALL", locale="C")
+library(data.table, warn.conflicts=FALSE, quietly=TRUE, verbose=FALSE)
+library(R.utils, warn.conflicts=FALSE, quietly=TRUE, verbose=FALSE)
+```
+```{r}
+### download
+```{r, echo=TRUE}
+### Utility Functions
+getFile <- function(fileUrl, destnm) {
+    setInternet2(TRUE)
+    if (!file.exists('data')) {
+        dir.create('data')
+    }
+     if (file.exists(destnm)) {
+         #message(cat(destnm,'already exists!'))
+         #cat("------",list.files('./data'),"------",sep="\n")
+         return(destnm)
+     }
+    download.file(fileUrl, destnm, mode="wb")
+    return(destnm)
+}
+```
+
+```{r}
+library(data.table)
+data_url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+data_file <- "data/StormDB.csv"
+if (!file.exists(data_file)) {
+  zipped_data_file <- cat(data_file, "bz2", sep=".")
+  getFile(data_url, zipped_data_file)
+  bunzip2(zipped_data_file, data_file)
+}
+```
+
+# Results
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
