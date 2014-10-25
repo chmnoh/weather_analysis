@@ -10,14 +10,13 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 # Data Processing
-### libraries
+### libraries && utility function
 ```{r, warning=FALSE}
 Sys.setlocale(category="LC_ALL", locale="C")
-library(data.table, warn.conflicts=FALSE, quietly=TRUE, verbose=FALSE)
-library(R.utils, warn.conflicts=FALSE, quietly=TRUE, verbose=FALSE)
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(R.utils))
 ```
-```{r}
-### download
+
 ```{r, echo=TRUE}
 ### Utility Functions
 getFile <- function(fileUrl, destnm) {
@@ -35,14 +34,19 @@ getFile <- function(fileUrl, destnm) {
 }
 ```
 
+### download data file, preprocessing && load into data.table.
 ```{r}
 data_url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
-data_file <- "data/StormDB.csv"
-if (!file.exists(data_file)) {
-  zipped_data_file <- paste(data_file, "bz2", sep=".")
-  getFile(data_url, zipped_data_file)
-  bunzip2(zipped_data_file, data_file)
+unzipped_file <- "data/StormDB-unzipped.csv"
+data_file <- "data/StormDB.csv"  # preprocessed data file
+if (!file.exists(unzipped_file)) {
+  zipped_file <- paste(unzipped_file, "bz2", sep=".")
+  getFile(data_url, zipped_file)
+  bunzip2(zipped_file, unzipped_file)
+  preproc_cmd = "python preprocess.py"
+  system(preproc_cmd)
 }
+storm.db <- fread(data_file)
 ```
 
 # Results
