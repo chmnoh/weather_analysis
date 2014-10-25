@@ -35,7 +35,9 @@ getFile <- function(fileUrl, destnm) {
 ```
 
 ### download data file, preprocessing && load into data.table.
-```{r}
+You need to install python and download preprocessing script from here:  
+   https://raw.githubusercontent.com/Chang-Min/weather_analysis/master/preprocess.py
+```{r,cache=TRUE}
 data_url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 unzipped_file <- "data/StormDB-unzipped.csv"
 data_file <- "data/StormDB.csv"  # preprocessed data file
