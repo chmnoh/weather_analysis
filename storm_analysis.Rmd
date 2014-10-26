@@ -1,13 +1,15 @@
 ---
-title: "StormData Analysis for Effects On Public Health & Economy"
+title: "StormData Analysis For Effects On Public Health & Economy"
 author: "C.M. Oh"
 date: "Friday, October 24, 2014"
 output: html_document
 ---
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# Synopsis
+This document describes 'StormData'(of USA 1950~2011) analysis and its results.  
+Most harmful weather events for public health & economy are calculated as the intersection of top-5 'mean set' and 'sum set'.  
+In this respect, most harmful weather events for public health are "TORNADO" ,"(EXCESSIVE) HEAT" and "THUNDERSTORM WIND". Most harmful ones for economic properties are "HURRICANE","WINTER STORM" and "TROPICAL STORM", and ones for agricultural crop are "HURRICANE", "EXCESSIVE WETNESS", "COLD" AND "FROST".  
+The "HEAT" event appears commonly in the public health areas( FATALITIES and INJURIES), and the "HURRICANE" in the economic damage areas(PROPERTIES and CROP).  
 
 # Data Processing
 ### libraries && utility function
@@ -51,11 +53,146 @@ if (!file.exists(unzipped_file)) {
 storm.db <- fread(data_file)
 ```
 
-# Results
-You can also embed plots, for example:
-
-```{r, echo=FALSE}
-plot(cars)
+### event type normalizing function
+```{r}
+normalizeEvt <- function(nm) {
+  if (length(grep('hurricane', nm, ignore.case=T))) {
+    return("hurricane")
+  } else if (length(grep('tornado',nm, ignore.case=T))) {
+    return("tornado")
+  } else if (length(grep('tstm|thunderstorm', nm, ignore.case=T))) {
+    return("thunderstorm wind")
+  } else if (length(grep('winter storm|winter weather',nm, ignore.case=T))) {
+    return("winter storm")
+  } else if (length(grep('cold|freeze|low temperature',nm, ignore.case=T))) {
+    return("cold")
+  } else if (length(grep('high seas|heavy sea|surf|high waves',nm,
+                         ignore.case=T))) {
+    return("high surf")
+  } else if (length(grep('coastal flood',nm, ignore.case=T))) {
+    return("coastal flood")
+  } else if (length(grep('tropical storm',nm, ignore.case=T))) {
+    return("tropical storm")
+  } else if (length(grep('rain/snow',nm, ignore.case=T))) {
+    return("rain/snow")
+  } else if (length(grep('rain/wind',nm, ignore.case=T))) {
+    return("rain/wind")
+  } else if (length(grep('storm surge',nm, ignore.case=T))) {
+    return("storm surge")
+  } else if (length(grep('fire',nm, ignore.case=T))) {
+    return("wild fire")
+  } else if (length(grep('hail',nm, ignore.case=T))) {
+    return("hail")
+  } else if (length(grep('snow',nm, ignore.case=T))) {
+    return("snow")
+  } else if (length(grep('heat',nm, ignore.case=T))) {
+    return("heat")
+  } else if (length(grep('rain|rainfall',nm, ignore.case=T))) {
+    return("rain")
+  } else if (length(grep('slide',nm, ignore.case=T))) {
+    return("landslide")
+  } else if (length(grep('flood|high water|fld|high swell',nm, ignore.case=T))) {
+    return("flood")
+  } else if (length(grep('fog',nm, ignore.case=T))) {
+    return("fog")
+  } else if (length(grep('hypothermia|hyperthermia',nm, ignore.case=T))) {
+    return("hyperthermia")
+  } else if (length(grep('wind',nm, ignore.case=T))) {
+    return("wind")
+  } else if (length(grep('avalanc',nm, ignore.case=T))) {
+    return("avalanche")
+  } else if (length(grep('glaze|ice|icy',nm, ignore.case=T))) {
+    return("glaze/ice storm")
+  } else { return (nm) }
+}
+```
+### make fatalities & injuries table by event type from storm database
+```{r}
+sum.ph.fat <- storm.db[,sum(FATALITIES),by=EVTYPE][V1>0]
+sum.ph.inj <- storm.db[,sum(INJURIES),by=EVTYPE][V1>0]
+mean.ph.fat <- storm.db[,mean(FATALITIES),by=EVTYPE][V1>0]
+mean.ph.inj <- storm.db[,mean(INJURIES),by=EVTYPE][V1>0]
+## normalize event type
+sum.ph.fat <- sum.ph.fat[,EVT:=unlist(Map(normalizeEvt,EVTYPE))]
+sum.ph.inj <- sum.ph.inj[,EVT:=unlist(Map(normalizeEvt,EVTYPE))]
+mean.ph.fat <- mean.ph.fat[,EVT:=unlist(Map(normalizeEvt,EVTYPE))]
+mean.ph.inj <- mean.ph.inj[,EVT:=unlist(Map(normalizeEvt,EVTYPE))]
+norm.sum.ph.fat <- sum.ph.fat[,sum(V1), by=EVT]
+norm.sum.ph.inj <- sum.ph.inj[,sum(V1), by=EVT]
+# sum of means needed for normalized mean.
+norm.mean.ph.fat <- mean.ph.fat[,sum(V1), by=EVT]
+norm.mean.ph.inj <- mean.ph.inj[,sum(V1), by=EVT]
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+### make economic damage tables by event type from the database
+```{r}
+calcDamage <- function(dmg, exp) {
+  if (exp == "B" || exp == "b") {
+    return(dmg * 1000000000)
+  } else
+  if (exp == "M" || exp == "m") {
+    return (dmg * 1000000)
+  } else
+  if (exp == "K" || exp == "k") {
+    return (dmg * 1000)
+  } else {
+   return(dmg)
+  }
+}
+sum.ed.pro <- storm.db[,sum(calcDamage(PROPDMG,PROPDMGEXP)), by=EVTYPE][V1>0]
+sum.ed.cro <- storm.db[,sum(calcDamage(CROPDMG,CROPDMGEXP)), by=EVTYPE][V1>0]
+mean.ed.pro <- storm.db[,mean(calcDamage(PROPDMG,PROPDMGEXP)), by=EVTYPE][V1>0]
+mean.ed.cro <- storm.db[,mean(calcDamage(CROPDMG,CROPDMGEXP)), by=EVTYPE][V1>0]
+## get normalized table
+sum.ed.pro <- sum.ed.pro[,EVT:=unlist(Map(normalizeEvt,EVTYPE))]
+sum.ed.cro <- sum.ed.cro[,EVT:=unlist(Map(normalizeEvt,EVTYPE))]
+mean.ed.pro <- mean.ed.pro[,EVT:=unlist(Map(normalizeEvt,EVTYPE))]
+mean.ed.cro <- mean.ed.cro[,EVT:=unlist(Map(normalizeEvt,EVTYPE))]
+norm.sum.ed.pro <- sum.ed.pro[,sum(V1), by=EVT]
+norm.sum.ed.cro <- sum.ed.cro[,sum(V1), by=EVT]
+norm.mean.ed.pro <- mean.ed.pro[,sum(V1), by=EVT]
+norm.mean.ed.cro <- mean.ed.cro[,sum(V1), by=EVT]
+```
+
+
+# Results
+
+#### most harmful events for public health(fatalities)
+```{r}
+TOP5.SUM.PH.FAT <- head(norm.sum.ph.fat[order(V1, decreasing=T)],5)
+TOP5.MEAN.PH.FAT <- head(norm.mean.ph.fat[order(V1, decreasing=T)],5)
+intersect(TOP5.SUM.PH.FAT$EVT, TOP5.MEAN.PH.FAT$EVT)
+```
+
+#### most harmful events for public health(injuries)
+```{r}
+TOP5.SUM.PH.INJ <- head(norm.sum.ph.inj[order(V1, decreasing=T)],5)
+TOP5.MEAN.PH.INJ <- head(norm.mean.ph.inj[order(V1, decreasing=T)],5)
+intersect(TOP5.SUM.PH.INJ$EVT, TOP5.MEAN.PH.INJ$EVT)
+```
+
+#### most harmful events for economic damage(properties)
+```{r}
+TOP5.SUM.ED.PRO <- head(norm.sum.ed.pro[order(V1, decreasing=T)],5)
+TOP5.MEAN.ED.PRO <- head(norm.mean.ed.pro[order(V1, decreasing=T)],5)
+intersect(TOP5.SUM.ED.PRO$EVT, TOP5.MEAN.ED.PRO$EVT)
+```
+
+#### most harmful events for economic damage(agricultural crop)
+```{r}
+TOP5.SUM.ED.CRO <- head(norm.sum.ed.cro[order(V1, decreasing=T)],5)
+TOP5.MEAN.ED.CRO <- head(norm.mean.ed.cro[order(V1, decreasing=T)],5)
+intersect(TOP5.SUM.ED.CRO$EVT, TOP5.MEAN.ED.CRO$EVT)
+```
+
+#### damage graphs for top-5 events
+```{r}
+barplot(TOP5.MEAN.PH.FAT$V1, ylab="Mean Fatalities",col=rainbow(5),main="Top-5 mean fatalities for each weather events ")
+legend("topright", TOP5.MEAN.PH.FAT$EVT, cex=1.2, fill=rainbow(5))
+```
+```{r}
+barplot(TOP5.MEAN.ED.PRO$V1, ylab="Mean Properties Damage",col=rainbow(5),main="Top-5 mean property damage for each weather events ")
+legend("topright", TOP5.MEAN.ED.PRO$EVT, cex=1.2, fill=rainbow(5))
+```
